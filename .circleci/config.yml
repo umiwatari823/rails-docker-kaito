@@ -27,7 +27,7 @@ jobs:
       RAILS_ENV: test
     working_directory: ~/rails-docker-kaito/src
     steps:
-      - checkout
+      - checkout:
           path: ~/rails-docker-kaito
       - ruby/install-deps 
 
