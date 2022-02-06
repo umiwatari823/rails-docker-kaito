@@ -12,7 +12,7 @@ jobs:
           path: ~/rails-docker-kaito
       - ruby/install-deps
 
-  test:
+  test: #a
     docker:
       - image: cimg/ruby:2.7.5
       - image: circleci/mysql:5.5
