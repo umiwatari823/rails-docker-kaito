@@ -8,13 +8,13 @@ jobs:
       - image: circleci/ruby:2.7
     working_directory: ~/rails-docker-kaito/src
     steps:
-      - checkout
+      - checkout:
           path: ~/rails-docker-kaito
       - ruby/install-deps
 
   test:
     docker:
-      - image: circleci/ruby:2.7
+      - image: cimg/ruby:2.7.5
       - image: circleci/mysql:5.5
         environment:
           MYSQL_ROOT_PASSWORD: password
@@ -27,17 +27,15 @@ jobs:
       RAILS_ENV: test
     working_directory: ~/rails-docker-kaito/src
     steps:
-      - checkout
+      - checkout:
           path: ~/rails-docker-kaito
-      - ruby/install-deps 
-
-
-  - run:
-      name: Database setup
-      command: bundle exec rails db:migrate
-  - run:
-      name: test
-      command: bundle exec rake test
+      - ruby/install-deps
+      - run:
+          name: Database setup
+          command: bundle exec rails db:migrate
+      - run:
+          name: test
+          command: bundle exec rake test
 
 workflows:
   version: 2
