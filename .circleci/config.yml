@@ -1,0 +1,62 @@
+version: 2.1 # 2.1 を使うと Orb や他の機能を使用することができます。 
+
+# 設定で使用する Orb を宣言します。
+# Orb に関する詳細は、https://circleci.com/docs/ja/2.0/orb-intro/をご覧ください。
+orbs:
+  ruby: circleci/ruby@1.1.2
+
+jobs:
+  build: #  "build"という名前の最初のジョブです。
+    docker:
+      - image: circleci/ruby:2.7 # カスタマイズされた CircleCI Docker イメージを使用します
+      working_directory: ~/rails-docker-kaito/src
+    steps:
+      - checkout # Git コードをプルダウンします。
+          path: ~/rails-docker-kaito
+      - ruby/install-deps # Ruby Orb を使って依存関係をインストールします。
+
+  test:  # "test"という名前の２つ目のジョブです。
+    # テストを高速化するために「並列ジョブコンテナ」を実行します。
+    # これによりテストが複数のコンテナに分割されます。
+    parallelism: 3
+    # ここでは、2 つの Docker イメージを設定します。
+    docker:
+      - image: cimg/ruby:2.7-node # プライマリ Docker イメージです。ここでステップコマンドが実行されます。
+      - image: circleci/mysql:5.5
+        environment: # POSTGRES 環境変数を追加します。
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL__DATABASE: app_test
+          MYSQL__USER: root
+    # Ruby/Rails 固有の環境変数をプライマリコンテナに適用します。
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+      APP_DATABASE_HOST: "127.0.0.1"
+      RAILS_ENV: test
+    working_directory: ~/rails-docker-kaito/src
+    # 実行する一連のステップです。「ビルド」のステップと似たステップもあります。
+    steps:
+      - checkout # Git コードをプルダウンします。
+          path: ~/rails-docker-kaito
+      - ruby/install-deps 
+      # Ruby Orb を使って依存関係をインストールします。
+      # ここでは、データベース上で実行する前に
+      # セカンダリコンテナが起動することを確認します。
+      
+  - run:
+      name: Database setup
+      command: bundle exec rails db:migrate
+  - run:
+      name: test
+      command: bundle exec rake test
+
+# ワークフローを使って上記で宣言したジョブをオーケストレーションします。
+
+workflows:
+  version: 2
+  build_and_test:     # ワークフローの名前は "build_and_test" です。
+    jobs:             # このワークフローの一部として実行するジョブのリストです。
+      - build         # まず、ビルドを実行します。
+      - test:         # 次に、テストを実行します。
+          requires:   # テストを実行するにはビルドを渡す必要があります。
+            - build   # 最後に、ビルドしたジョブを実行します。
